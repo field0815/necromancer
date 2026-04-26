@@ -138,6 +138,9 @@
     #startScreen #saveStatus a{font-size:10px !important; padding:4px 8px !important; margin:0 4px !important;}
   }
   /* 상점 - 3배 이상 확대 */
+  /* 패널 X 닫기 버튼 */
+  .closeBtn{position:absolute;top:10px;right:10px;width:36px;height:36px;background:rgba(60,30,90,.7);border:2px solid #a890ff;color:#e0c8ff;font-family:inherit;font-size:18px;font-weight:bold;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;z-index:1;}
+  .closeBtn:hover, .closeBtn:active{background:rgba(180,80,200,.9);transform:scale(1.05);}
   #upgradePanel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(12,6,24,.98);border:3px solid #a890ff;padding:48px 56px;z-index:20;display:none;min-width:720px;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 0 120px #a890ff,inset 0 0 60px rgba(106,76,192,.3);}
   #upgradePanel h2{margin:0 0 28px;color:#e0c8ff;letter-spacing:10px;font-size:44px;text-align:center;text-shadow:0 0 30px #a890ff;}
   #upgradePanel .u{padding:26px 32px;margin:14px 0;border:2px solid #6a4cc0;background:rgba(40,20,80,.6);cursor:pointer;display:flex;align-items:center;gap:28px;font-size:22px;transition:all .2s;}
@@ -248,6 +251,7 @@
 
 <!-- 좀비 상점 (공동묘지 E) -->
 <div id="upgradePanel">
+  <button class="closeBtn" id="closeUpgradeBtn" aria-label="닫기">✕</button>
   <h2>◆ 묘 역 ◆</h2>
   <div id="upgradeList"></div>
 </div>
@@ -268,6 +272,7 @@
 
 <!-- 튜토리얼 (공동묘지 T) -->
 <div id="tutorialPanel">
+  <button class="closeBtn" id="closeTutorialBtn" aria-label="닫기">✕</button>
   <h2>◆ 튜토리얼 ◆</h2>
   <div class="sec"><b>이동</b><br>PC: <kbd>WASD</kbd> · 모바일: 화면 좌측 조이스틱</div>
   <div class="sec"><b>주공격: 심령화살</b><br>PC: <kbd>좌클릭</kbd>으로 충전(꾹 누르면 최대 3발) · 모바일: 자동 발사<br>적을 추적하는 영혼의 화살. 강화시 갯수와 추적력 증가</div>
@@ -689,6 +694,9 @@ function makeCluster(cx, cy, difficulty){
 
 function spawnEnemy(x,y,type,scale){
   const s = enemyStats(type, scale * state.difficultyScale);
+  // 맵 경계 안 좌표로 클램프
+  x = Math.max(s.r + 50, Math.min(MAP_W - s.r - 50, x));
+  y = Math.max(s.r + 50, Math.min(MAP_H - s.r - 50, y));
   enemies.push({
     x,y,type,
     hp:s.hp, maxHp:s.hp, atk:s.atk, spd:s.spd, r:s.r*(1+Math.log(Math.max(1,scale*state.difficultyScale))*.25),
@@ -753,6 +761,9 @@ const NAMED_DEFS = {
 function spawnNamed(type, x, y){
   const def = NAMED_DEFS[type];
   const s = enemyStats('named', 2.2);
+  // 맵 경계 안 좌표 보장
+  x = Math.max(s.r + 100, Math.min(MAP_W - s.r - 100, x));
+  y = Math.max(s.r + 100, Math.min(MAP_H - s.r - 100, y));
   // 같은 기사의 좀비가 많이 만들어졌을수록 강함
   const bonus = 1 + namedDeathCount[type]*0.5;
   // 다른 기수 사망 시 기수 전체 +25%
@@ -1765,6 +1776,14 @@ function updateZombies(){
       }
     }
   }
+  
+  // 모든 좀비가 맵 경계 안에 있도록 클램프
+  for(const z of zombies){
+    if(z.x < z.r) z.x = z.r;
+    else if(z.x > MAP_W - z.r) z.x = MAP_W - z.r;
+    if(z.y < z.r) z.y = z.r;
+    else if(z.y > MAP_H - z.r) z.y = MAP_H - z.r;
+  }
 }
 
 /* ===================== 네임드 특수능력 ===================== */
@@ -2415,6 +2434,15 @@ function updateEnemies(){
       c.roamY = c.y + rand(-200,200);
     }
   }
+  
+  // 모든 적이 맵 경계 안에 있도록 클램프
+  // 플레이어가 갈 수 있는 영역과 동일한 경계 적용
+  for(const e of enemies){
+    if(e.x < e.r) e.x = e.r;
+    else if(e.x > MAP_W - e.r) e.x = MAP_W - e.r;
+    if(e.y < e.r) e.y = e.r;
+    else if(e.y > MAP_H - e.r) e.y = MAP_H - e.r;
+  }
 }
 
 /* ===================== 시체 → 좀비 ===================== */
@@ -3055,6 +3083,37 @@ function drawBackground(){
     ctx.fillStyle=`rgba(70,110,55,${.4*t.shade})`;
     ctx.beginPath(); ctx.arc(sx-t.r*.2, sy-t.r*.2, t.r*.6, 0, Math.PI*2); ctx.fill();
   }
+}
+
+// 맵 경계 표시 - 맵 가장자리 빨간 차단선
+function drawMapBoundary(){
+  // 맵 가장자리(0, MAP_W, 0, MAP_H)를 화면 좌표로 변환
+  const x0 = wx2sx(0), x1 = wx2sx(MAP_W);
+  const y0 = wy2sy(0), y1 = wy2sy(MAP_H);
+  const t = now()*.002;
+  const pulse = 0.5 + 0.3*Math.sin(t*3);
+  
+  ctx.save();
+  // 외곽 - 굵은 빨간 선 (맵 안에서 보이는 가장자리만)
+  ctx.strokeStyle = `rgba(255,60,80,${pulse})`;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([14, 8]);
+  ctx.lineDashOffset = -t * 30;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y0);
+  ctx.lineTo(x1, y1);
+  ctx.lineTo(x0, y1);
+  ctx.closePath();
+  ctx.stroke();
+  
+  // 내부 글로우 (맵 안쪽으로 흐려지는 빨간 안개)
+  ctx.setLineDash([]);
+  ctx.lineWidth = 24;
+  ctx.strokeStyle = `rgba(180,30,50,${pulse * 0.25})`;
+  ctx.stroke();
+  
+  ctx.restore();
 }
 
 function drawObstacles(){
@@ -4517,20 +4576,26 @@ function updateUI(){
     graveHintEl.style.opacity = '0';
     const ga = document.getElementById('graveyardActions');
     if(ga){
-      // 심판자 등장 중엔 상점 비활성화 + 패널/안내 열려있을 땐 숨김
-      const showActions = inG && !panelVisible && !tutorialVisible && !state.fateChoicePending && !levelupVisible;
+      // 상점/튜토리얼 패널 열려있어도 액션 버튼은 표시 (닫기 토글용)
+      // 단, 운명 카드/레벨업 중이면 숨김
+      const showActions = inG && !state.fateChoicePending && !levelupVisible;
       if(showActions) ga.classList.add('mobile-active');
       else ga.classList.remove('mobile-active');
-      // 심판자 활성 중 상점 버튼만 비활성 표시
+      // 패널 열려있을 때 버튼 라벨 변경하고 액티브 표시
       const shopBtn = document.getElementById('gActionShop');
+      const tutBtn = document.getElementById('gActionTutorial');
       if(shopBtn){
-        if(state.judgeSpawned && !state.ending){
+        shopBtn.textContent = panelVisible ? '✕ 닫기' : '🏪 상점';
+        if(state.judgeSpawned && !state.ending && !panelVisible){
           shopBtn.style.opacity = '.4';
           shopBtn.style.pointerEvents = 'none';
         } else {
           shopBtn.style.opacity = '1';
           shopBtn.style.pointerEvents = 'auto';
         }
+      }
+      if(tutBtn){
+        tutBtn.textContent = tutorialVisible ? '✕ 닫기' : '📖 튜토리얼';
       }
     }
   } else {
@@ -5266,6 +5331,7 @@ function loop(){
   
   drawBackground();
   drawObstacles();
+  drawMapBoundary();
   drawGraveyard();
   drawCurseAura();
   drawShockwaves();
@@ -5389,6 +5455,20 @@ function startGame(){
 startBtn.addEventListener('click', startGame);
 startBtn.addEventListener('touchstart', e=>{ e.preventDefault(); startGame(); }, {passive:false});
 
+// 패널 닫기 버튼 - PC/모바일 공통
+const closeUpBtn = document.getElementById('closeUpgradeBtn');
+if(closeUpBtn){
+  const h = (e)=>{ e.preventDefault(); e.stopPropagation(); showUpgradePanel(false); };
+  closeUpBtn.addEventListener('click', h);
+  closeUpBtn.addEventListener('touchstart', h, {passive:false});
+}
+const closeTutBtn = document.getElementById('closeTutorialBtn');
+if(closeTutBtn){
+  const h = (e)=>{ e.preventDefault(); e.stopPropagation(); showTutorial(false); };
+  closeTutBtn.addEventListener('click', h);
+  closeTutBtn.addEventListener('touchstart', h, {passive:false});
+}
+
 // 다음 전쟁 버튼
 const nextWarBtn = document.getElementById('nextWarBtn');
 if(nextWarBtn){
@@ -5415,6 +5495,9 @@ function setupMobileControls(){
     joyCenter.y = rect.top + rect.height/2;
     if(e.changedTouches) joyTouchId = t.identifier;
     mobileMove.active = true;
+    // 모바일 - 조이스틱 누르면 열려있는 상점/튜토리얼 자동 닫기
+    if(panelVisible) showUpgradePanel(false);
+    if(tutorialVisible) showTutorial(false);
     joyMove(e);
   }
   function joyMove(e){
@@ -5493,11 +5576,13 @@ function setupMobileControls(){
   if(gShop){
     const h = (e)=>{
       e.preventDefault(); e.stopPropagation();
+      // 이미 열려있으면 무조건 닫기 (위치 무관)
+      if(panelVisible){ showUpgradePanel(false); return; }
       const inG = dist(player, CENTER) < GRAVEYARD_R;
       if(!inG) return;
       if(state.judgeSpawned && !state.ending) return;
       if(tutorialVisible) showTutorial(false);
-      showUpgradePanel(!panelVisible);
+      showUpgradePanel(true);
     };
     gShop.addEventListener('click', h);
     gShop.addEventListener('touchstart', h, {passive:false});
@@ -5506,10 +5591,12 @@ function setupMobileControls(){
   if(gTut){
     const h = (e)=>{
       e.preventDefault(); e.stopPropagation();
+      // 이미 열려있으면 무조건 닫기
+      if(tutorialVisible){ showTutorial(false); return; }
       const inG = dist(player, CENTER) < GRAVEYARD_R;
       if(!inG) return;
       if(panelVisible) showUpgradePanel(false);
-      showTutorial(!tutorialVisible);
+      showTutorial(true);
     };
     gTut.addEventListener('click', h);
     gTut.addEventListener('touchstart', h, {passive:false});
