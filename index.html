@@ -248,11 +248,11 @@
 
 <!-- 좀비 상점 (공동묘지 E) -->
 <div id="upgradePanel">
-  <h2>◆ 좀비 강화 상점 ◆</h2>
+  <h2>◆ 묘 역 ◆</h2>
   <div id="upgradeList"></div>
 </div>
 
-<!-- 레벨업 박스 (랜덤 3택) -->
+<!-- 망자의 선물 (랜덤 3택) -->
 <div id="levelupPanel">
   <h2>LEVEL <span id="luLvl" style="color:#ffe080;">2</span></h2>
   <div style="text-align:center;margin-bottom:24px;font-size:18px;opacity:.85;letter-spacing:4px;color:#c0a8ff;">하나를 선택하세요</div>
@@ -479,7 +479,7 @@ const levelupOptions = {
 };
 
 // 헬퍼
-function corpseBoomRadius(){ return 140 + (levelupOptions.s_corpseExplode.lvl)*30; }
+function corpseBoomRadius(){ return 110 + (levelupOptions.s_corpseExplode.lvl)*10; }
 function corpseBoomDamage(base){ return base * (1 + levelupOptions.s_corpseExplode.lvl*.5); }
 // 플레이어 능력 헬퍼
 function pSpdMul(){ return 1 + levelupOptions.pSpd.lvl*.15; }
@@ -511,7 +511,7 @@ const player = {
   hp:100, maxHp:100,
   baseSpeed:2.2,
   fireCooldown:0, fireRate:50,
-  baseAtk:12,
+  baseAtk:8,
   vx:0, vy:0,
   hitFlash:0,
   // 심령화살 충전
@@ -541,11 +541,11 @@ const aimBeams = [];   // 절제/기근 조준선
 function enemyStats(type, scale){
   const s = scale;
   switch(type){
-    case 'melee':  return {hp:30*s, atk:10*s, spd:1.1, r:12, atkRange:26, atkCd:45, weight:1};
-    case 'ranged': return {hp:14*s, atk:8*s,  spd:0.9, r:11, atkRange:200,atkCd:70, weight:0.8, projectile:true};
-    case 'heavy':  return {hp:480*s,atk:44*s, spd:0.45,r:22, atkRange:46, atkCd:90, weight:4, aoe:70};
-    case 'knight': return {hp:90*s, atk:28*s, spd:2.3, r:14, atkRange:28, atkCd:55, weight:2.2, charge:true};
-    case 'named':  return {hp:2400*s,atk:45*s,spd:1.3, r:30, atkRange:60, atkCd:50, weight:8};
+    case 'melee':  return {hp:60*s, atk:20*s, spd:1.1, r:12, atkRange:26, atkCd:45, weight:1};
+    case 'ranged': return {hp:44*s, atk:18*s,  spd:0.9, r:11, atkRange:200,atkCd:70, weight:0.8, projectile:true};
+    case 'heavy':  return {hp:580*s,atk:44*s, spd:0.45,r:22, atkRange:46, atkCd:90, weight:4, aoe:70};
+    case 'knight': return {hp:120*s, atk:28*s, spd:2.3, r:14, atkRange:28, atkCd:55, weight:2.2, charge:true};
+    case 'named':  return {hp:4400*s,atk:65*s,spd:1.3, r:30, atkRange:60, atkCd:50, weight:8};
   }
 }
 
